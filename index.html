@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>iOS rendering simple test</title>
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <meta charset="utf-8">
+</head>
+<body>
+  <script type="module">
+    import * as THREE from './three/three.module.js';
+    import {GLTFLoader} from './three/GLTFLoader.js';
+
+    const assetFileURL = 'assets/scene.gltf';
+
+    const renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.001, 2000);
+
+    const light = new THREE.DirectionalLight(0xffffff);
+    light.position.set(1, 1, 1);
+    scene.add(light);
+
+    new GLTFLoader().load(assetFileURL, gltf => {
+      gltf.scene.position.set(0, -2, -2.5);
+      gltf.scene.rotation.y = Math.PI;
+      scene.add(gltf.scene);
+      renderer.render(scene, camera);
+    }, undefined, console.error);
+
+    renderer.render(scene, camera);
+  </script>
+</body>
+</html>
