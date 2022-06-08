@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>iOS texture load simple test</title>
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+  <meta charset="utf-8">
+</head>
+<body>
+  <a href="https://github.com/takahirox/ios-render-test">Source</a><br />
+  <br />
+  8192x8192 texture(s) upload test<br />
+  <br />
+  Use ImageBitmap
+  <input id="useImageBitmapCheckbox" type="checkbox" checked></input>
+  <br />
+  Generate mipmaps
+  <input id="generateMipmapsCheckbox" type="checkbox" checked></input>
+  <br />
+  Texture num
+  <select id="textureNumSelect">
+    <option value="1" selected>1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+    <option value="6">6</option>
+    <option value="7">7</option>
+    <option value="8">8</option>
+    <option value="9">9</option>
+    <option value="10">10</option>
+  </select>
+  <br />
+  <br />
+  <button id="runButton">Run</button><br />
+  <ul id="logUl"></ul>
+  <script type="module">
+    const textureUrl = './assets/textures/tex_u1_v1_baseColor.jpeg';
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl2');
+
+    const loadTexture = (image, generateMipmaps) => {
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      const level = 0;
+      const internalFormat = gl.RGBA;
+      const srcFormat = gl.RGBA;
+      const srcType = gl.UNSIGNED_BYTE;
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+                    srcFormat, srcType, image);
+      if (generateMipmaps) {
+        gl.generateMipmap(gl.TEXTURE_2D);
+      }
+      return texture;
+    };
+
+    const loadImageBitmap = () => {
+      return fetch(textureUrl).then(res => {
+        return res.blob();
+      }).then(blob => {
+        return createImageBitmap(blob);
+      });
+    };
+
+    const loadImage = () => {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.addEventListener('load', () => { resolve(image); });
+        image.addEventListener('error', reject);
+        image.src = textureUrl;
+      });
+    };
+
+    const disableElements = () => {
+      document.getElementById('useImageBitmapCheckbox').disabled = true;
+      document.getElementById('generateMipmapsCheckbox').disabled = true;
+      document.getElementById('textureNumSelect').disabled = true;
+      document.getElementById('runButton').disabled = true;
+    };
+
+    const run = () => {
+      disableElements();
+
+      const useImageBitmap = document.getElementById('useImageBitmapCheckbox').checked;
+      const generateMipmaps = document.getElementById('generateMipmapsCheckbox').checked;
+
+      addLog('Test started');
+      addLog('Test Parameter: ' + (useImageBitmap ? 'Use ImageBitmap' : 'Use regular Image'));
+      addLog('Test Parameter: ' + (generateMipmaps ? 'Generate mipmaps' : 'Not generate mipmaps'));
+
+      const numSelect = document.getElementById('textureNumSelect');
+      const options = numSelect.options;
+      const option = options[numSelect.selectedIndex];
+      const num = parseInt(option.value);
+      let loadedNum = 0;
+
+      for (let i = 0; i < num; i++) {
+        addLog('Load image #' + (i + 1) + ' is started');
+        (useImageBitmap ? loadImageBitmap() : loadImage()).then(image =>{
+          addLog('Load Image #' + (i + 1) + ' is completed');
+          addLog('Upload texture #' + (i + 1));
+          loadTexture(image, generateMipmaps);
+          loadedNum++;
+          if (loadedNum == num) {
+            addLog('Test finished');
+          }
+        }).catch(error => {
+          addLog('Load Image #' + (i + 1) + ' failed');
+          if (error.message) {
+            addLog(error.message);
+          }
+        });
+      }
+    };
+
+    const addLog = (str) => {
+      const li = document.createElement('li');
+      li.innerText = str;
+      document.getElementById('logUl').appendChild(li);
+    };
+
+    document.getElementById('runButton').addEventListener('click', run);
+
+    if (typeof createImageBitmap === 'undefined') {
+      const checkbox = document.getElementById('useImageBitmapCheckbox');
+      checkbox.checked = false;
+      checkbox.disabled = true;
+    }
+
+    addLog('WEBGL2 MAX_TEXTURE_SIZE: ' + gl.getParameter(gl.MAX_TEXTURE_SIZE));
+  </script>
+</body>
+</html>
+
